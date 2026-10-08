@@ -1,0 +1,32 @@
+<form id="studentForm">
+  <label for="fullName">ФИО:</label>
+  <input type="text" id="fullName" name="fullName" required>
+
+  <label for="email">E-mail:</label>
+  <input type="email" id="email" name="email" required>
+
+  <label for="course">Курс:</label>
+  <select id="course" name="course" required>
+    <option value="">Выберите курс</option>
+    <option value="1">1 курс</option>
+    <option value="2">2 курс</option>
+    <option value="3">3 курс</option>
+    <option value="4">4 курс</option>
+  </select>
+
+  <label>
+    <input type="checkbox" id="agreement" name="agreement" required>
+    Я согласен с правилами
+  </label>
+
+  <button type="submit">Зарегистрироваться</button>
+</form>
+
+<script>
+  document.getElementById("studentForm").addEventListener("submit", function (event) {
+    if (!this.checkValidity()) {
+      event.preventDefault();
+      this.reportValidity();
+    }
+  });
+</script>
