@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Электронный журнал</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+header{background:#173b70;color:white;padding:25px;text-align:center}
+.container{max-width:1000px;margin:30px auto;padding:20px}
+.panel{background:white;padding:22px;border-radius:12px;margin-bottom:20px;box-shadow:0 3px 12px #0000000b}
+form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px}
+input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+button{padding:12px 18px;background:#2563eb;color:white;border:0;border-radius:7px;cursor:pointer}
+button:hover{background:#1d4ed8}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}
+.stat{background:white;padding:20px;border-radius:10px;text-align:center}
+.stat strong{display:block;font-size:28px;color:#2563eb}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:white}
+th,td{padding:13px;text-align:left;border-bottom:1px solid #e2e8f0}
+th{background:#eaf0fb}
+.delete{background:#dc3545;padding:8px 10px}
+.empty{text-align:center;color:#64748b}
+@media(max-width:700px){form{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.container{padding:12px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+<h1>📚 Электронный журнал</h1>
+<p>Управление успеваемостью студентов</p>
+</header>
+<div class="container">
+<section class="stats">
+<div class="stat">Студентов<strong id="count">0</strong></div>
+<div class="stat">Средний балл<strong id="average">0.0</strong></div>
+<div class="stat">Отличные оценки<strong id="excellent">0</strong></div>
+</section>
+
+<section class="panel">
+<h2>Добавить запись</h2>
+<form id="studentForm">
+<input id="name" placeholder="Имя студента" required maxlength="100">
+<input id="subject" placeholder="Предмет" required maxlength="100">
+<select id="grade" required>
+<option value="5">Оценка: 5</option>
+<option value="4">Оценка: 4</option>
+<option value="3">Оценка: 3</option>
+<option value="2">Оценка: 2</option>
+</select>
+<button type="submit">Добавить</button>
+</form>
+</section>
+
+<section class="panel">
+<h2>Успеваемость</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>№</th><th>Студент</th><th>Предмет</th><th>Оценка</th><th>Действие</th></tr>
+</thead>
+<tbody id="records"></tbody>
+</table>
+</div>
+<p id="empty" class="empty">Записей пока нет. Добавьте первую запись.</p>
+</section>
+</div>
+
+<script>
+let students=[
+{name:"Александр Иванов",subject:"Программирование",grade:5},
+{name:"Мария Петрова",subject:"Веб-разработка",grade:4},
+{name:"Данияр Садыков",subject:"Базы данных",grade:5}
+];
+
+const form=document.getElementById("studentForm");
+const records=document.getElementById("records");
+
+form.addEventListener("submit",event=>{
+event.preventDefault();
+const name=document.getElementById("name").value.trim();
+const subject=document.getElementById("subject").value.trim();
+const grade=Number(document.getElementById("grade").value);
+if(!name||!subject||grade<2||grade>5)return;
+students.push({name,subject,grade});
+form.reset();
+render();
+});
+
+function render(){
+records.replaceChildren();
+students.forEach((student,index)=>{
+const row=document.createElement("tr");
+[index+1,student.name,student.subject,student.grade].forEach(value=>{
+const cell=document.createElement("td");
+cell.textContent=value;
+row.append(cell);
+});
+const action=document.createElement("td");
+const button=document.createElement("button");
+button.textContent="Удалить";
+button.className="delete";
+button.addEventListener("click",()=>{
+students.splice(index,1);
+render();
+});
+action.append(button);
+row.append(action);
+records.append(row);
+});
+
+document.getElementById("count").textContent=students.length;
+const avg=students.length?students.reduce((sum,s)=>sum+s.grade,0)/students.length:0;
+document.getElementById("average").textContent=avg.toFixed(1);
+document.getElementById("excellent").textContent=students.filter(s=>s.grade===5).length;
+document.getElementById("empty").hidden=students.length>0;
+}
+render();
+</script>
+</body>
+</html>
