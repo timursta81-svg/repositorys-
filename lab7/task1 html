@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кафе Aroma</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff8f0;color:#38251c}
+header{background:#573626;color:white;text-align:center;padding:30px 15px}
+header h1{margin:0;font-size:36px}
+nav{display:flex;justify-content:center;gap:10px;padding:20px;flex-wrap:wrap}
+button{cursor:pointer;border:0;border-radius:8px;padding:12px 20px;background:#8b5e3c;color:white;font-size:15px}
+button:hover{background:#65402b}
+main{max-width:900px;margin:auto;padding:20px}
+h2{text-align:center;color:#75472e}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.card{background:white;padding:22px;border-radius:14px;box-shadow:0 3px 12px #00000012;text-align:center}
+.card .emoji{font-size:45px}
+.price{color:#a05b2b;font-weight:bold;font-size:20px}
+footer{text-align:center;padding:25px;background:#573626;color:white;margin-top:30px}
+</style>
+</head>
+<body>
+<header>
+<h1>☕ Кафе Aroma</h1>
+<p>Вкус каждого дня</p>
+</header>
+<nav>
+<button onclick="showMenu('all')">Всё меню</button>
+<button onclick="showMenu('food')">Еда</button>
+<button onclick="showMenu('drink')">Напитки</button>
+</nav>
+<main>
+<h2>Наше меню</h2>
+<div class="menu" id="menu"></div>
+</main>
+<footer>© 2026 Кафе Aroma | Добро пожаловать!</footer>
+<script>
+const products=[
+{name:"Капучино",price:900,type:"drink",emoji:"☕",desc:"Кофе с нежной молочной пеной"},
+{name:"Чай",price:500,type:"drink",emoji:"🍵",desc:"Ароматный горячий чай"},
+{name:"Лимонад",price:700,type:"drink",emoji:"🍋",desc:"Освежающий домашний напиток"},
+{name:"Бургер",price:1800,type:"food",emoji:"🍔",desc:"Сочный бургер с овощами"},
+{name:"Пицца",price:2200,type:"food",emoji:"🍕",desc:"Пицца с сыром и томатами"},
+{name:"Десерт",price:1100,type:"food",emoji:"🍰",desc:"Нежный сладкий десерт"}
+];
+function showMenu(type){
+const menu=document.getElementById("menu");
+menu.replaceChildren();
+products.filter(p=>type==="all"||p.type===type).forEach(p=>{
+const card=document.createElement("article");
+card.className="card";
+const emoji=document.createElement("div");
+emoji.className="emoji";
+emoji.textContent=p.emoji;
+const name=document.createElement("h3");
+name.textContent=p.name;
+const desc=document.createElement("p");
+desc.textContent=p.desc;
+const price=document.createElement("div");
+price.className="price";
+price.textContent=p.price+" ₸";
+card.append(emoji,name,desc,price);
+menu.append(card);
+});
+}
+showMenu("all");
+</script>
+</body>
+</html>
