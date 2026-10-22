@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Список покупок</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f2f4f8; margin: 0; padding: 24px; }
+  .card { max-width: 480px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  h1 { margin-top: 0; font-size: 22px; }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; padding: 10px; border: 1px solid #c5cad3; border-radius: 8px; font-size: 16px; }
+  button { padding: 10px 14px; border: 0; border-radius: 8px; background: #2f6fed; color: #fff; cursor: pointer; }
+  button.danger { background: #d64545; margin-top: 8px; }
+  ul { list-style: none; padding: 0; margin: 16px 0 0; }
+  li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceef2; }
+  li button { background: #d64545; padding: 6px 10px; }
+  .muted { color: #6b7280; font-size: 14px; }
+  .error { color: #d64545; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Список покупок</h1>
+  <form id="form">
+    <input id="item" placeholder="Название товара" autocomplete="off">
+    <button type="submit">Добавить</button>
+  </form>
+  <p id="error" class="error" hidden></p>
+  <ul id="list"></ul>
+  <p id="empty" class="muted">Список пуст. Добавьте первый товар.</p>
+  <p class="muted">Товаров: <span id="count">0</span></p>
+  <button id="clear" class="danger">Очистить список</button>
+</main>
+
+<script>
+// Задание 1 (Базовый): Список покупок. Хранилище: localStorage.
+const KEY = "lab8_shopping";
+
+const form = document.querySelector("#form");
+const input = document.querySelector("#item");
+const list = document.querySelector("#list");
+const emptyMsg = document.querySelector("#empty");
+const countEl = document.querySelector("#count");
+const errorEl = document.querySelector("#error");
+const clearBtn = document.querySelector("#clear");
+
+// Структура данных: [{ id: 1730000000000, name: "Молоко" }, ...]
+let items = loadItems();
+
+// Чтение: защита от отсутствия данных и битого JSON
+function loadItems() {
+  try {
+    const raw = localStorage.getItem(KEY);       // null, если ключа нет
+    const parsed = JSON.parse(raw || "[]");      // строка -> массив
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(it => it && typeof it.name === "string");
+  } catch (e) {
+    console.warn("Поврежденный JSON, список сброшен:", e);
+    return [];
+  }
+}
+
+// Запись: массив -> строка JSON
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(items));
+  } catch (e) {
+    showError("Не удалось сохранить данные.");
+  }
+  render();
+}
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.hidden = !msg;
+}
+
+function render() {
+  list.replaceChildren();
+  items.forEach(item => {
+    const li = document.createElement("li");
+    const span = document.createElement("span");
+    span.textContent = item.name;                // textContent защищает от XSS
+    const del = document.createElement("button");
+    del.textContent = "Удалить";
+    del.addEventListener("click", () => {
+      items = items.filter(it => it.id !== item.id);
+      save();
+    });
+    li.append(span, del);
+    list.append(li);
+  });
+  countEl.textContent = items.length;
+  emptyMsg.hidden = items.length > 0;
+  clearBtn.hidden = items.length === 0;
+}
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const name = input.value.trim();
+  if (!name) {                                    // пустой ввод не сохраняем
+    showError("Введите название товара.");
+    return;
+  }
+  showError("");
+  items.push({ id: Date.now() + Math.random(), name });
+  input.value = "";
+  save();
+});
+
+clearBtn.addEventListener("click", () => {
+  items = [];
+  localStorage.removeItem(KEY);                   // удаление по ключу
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
