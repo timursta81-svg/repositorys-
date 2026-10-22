@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Канбан-доска</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f2f4f8; margin: 0; padding: 24px; }
+  main { max-width: 960px; margin: 0 auto; }
+  h1 { margin-top: 0; font-size: 22px; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; }
+  #title { flex: 1; min-width: 200px; padding: 10px; border: 1px solid #c5cad3; border-radius: 8px; font-size: 16px; }
+  button, .file { padding: 10px 14px; border: 0; border-radius: 8px; background: #2f6fed; color: #fff; cursor: pointer; font-size: 14px; }
+  .secondary { background: #e5e8ef; color: #333; }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+  .column { background: #e9ecf3; border-radius: 12px; padding: 12px; min-height: 220px; }
+  .column.over { outline: 2px dashed #2f6fed; }
+  .column h2 { font-size: 16px; margin: 0 0 10px; }
+  ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  li { background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); cursor: grab; }
+  li .title { display: block; margin-bottom: 8px; word-break: break-word; }
+  li .actions { display: flex; gap: 6px; }
+  li button { padding: 4px 8px; font-size: 13px; background: #e5e8ef; color: #333; }
+  li button.del { background: #d64545; color: #fff; margin-left: auto; }
+  .error { color: #d64545; font-size: 14px; }
+  @media (max-width: 700px) { .board { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Канбан-доска</h1>
+  <form id="form">
+    <input id="title" placeholder="Название карточки" autocomplete="off">
+    <button type="submit">Добавить в «План»</button>
+    <button type="button" id="export" class="secondary">Экспорт JSON</button>
+    <label class="secondary file">Импорт JSON<input type="file" id="import" accept="application/json" hidden></label>
+  </form>
+  <p id="error" class="error" hidden></p>
+  <section class="board">
+    <div class="column" data-status="plan"><h2>План</h2><ul></ul></div>
+    <div class="column" data-status="progress"><h2>В работе</h2><ul></ul></div>
+    <div class="column" data-status="done"><h2>Готово</h2><ul></ul></div>
+  </section>
+</main>
+
+<script>
+// Задание 16 (Повышенный): Канбан-доска. Хранилище: localStorage.
+// Творческое задание: экспорт/импорт JSON-файла.
+const KEY = "lab8_kanban";
+const STATUSES = ["plan", "progress", "done"];
+
+const form = document.querySelector("#form");
+const input = document.querySelector("#title");
+const errorEl = document.querySelector("#error");
+const exportBtn = document.querySelector("#export");
+const importInput = document.querySelector("#import");
+const columns = document.querySelectorAll(".column");
+
+// Структура данных: [{ id: 1, title: "Сверстать форму", status: "plan" }, ...]
+let cards = loadCards();
+
+// Проверка данных (при загрузке и при импорте)
+function sanitize(parsed) {
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .filter(c => c && typeof c.title === "string" && STATUSES.includes(c.status))
+    .map(c => ({ id: c.id ?? Date.now() + Math.random(), title: c.title, status: c.status }));
+}
+
+function loadCards() {
+  try {
+    return sanitize(JSON.parse(localStorage.getItem(KEY) || "[]"));
+  } catch (e) {
+    console.warn("Поврежденный JSON, доска сброшена:", e);
+    return [];
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(cards));
+  } catch (e) {
+    showError("Не удалось сохранить данные.");
+  }
+  render();
+}
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.hidden = !msg;
+}
+
+// Перенос карточки между колонками (сохраняется сразу)
+function moveCard(id, newStatus) {
+  const card = cards.find(c => c.id === id);
+  if (!card || card.status === newStatus) return;
+  card.status = newStatus;
+  save();
+}
+
+function shift(card, step) {
+  const i = STATUSES.indexOf(card.status) + step;
+  if (i >= 0 && i < STATUSES.length) moveCard(card.id, STATUSES[i]);
+}
+
+function createCardEl(card) {
+  const li = document.createElement("li");
+  li.draggable = true;
+  li.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", String(card.id)));
+
+  const title = document.createElement("span");
+  title.className = "title";
+  title.textContent = card.title;
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+
+  const left = document.createElement("button");
+  left.textContent = "←";
+  left.disabled = card.status === STATUSES[0];
+  left.addEventListener("click", () => shift(card, -1));
+
+  const right = document.createElement("button");
+  right.textContent = "→";
+  right.disabled = card.status === STATUSES[STATUSES.length - 1];
+  right.addEventListener("click", () => shift(card, 1));
+
+  const del = document.createElement("button");
+  del.className = "del";
+  del.textContent = "Удалить";
+  del.addEventListener("click", () => {
+    cards = cards.filter(c => c.id !== card.id);
+    save();
+  });
+
+  actions.append(left, right, del);
+  li.append(title, actions);
+  return li;
+}
+
+function render() {
+  columns.forEach(col => {
+    const ul = col.querySelector("ul");
+    ul.replaceChildren();
+    cards.filter(c => c.status === col.dataset.status)
+         .forEach(c => ul.append(createCardEl(c)));
+  });
+}
+
+// Drag & Drop между колонками
+columns.forEach(col => {
+  col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("over"); });
+  col.addEventListener("dragleave", () => col.classList.remove("over"));
+  col.addEventListener("drop", e => {
+    e.preventDefault();
+    col.classList.remove("over");
+    const raw = e.dataTransfer.getData("text/plain");
+    const card = cards.find(c => String(c.id) === raw);
+    if (card) moveCard(card.id, col.dataset.status);
+  });
+});
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const title = input.value.trim();
+  if (!title) {
+    showError("Введите название карточки.");
+    return;
+  }
+  showError("");
+  cards.push({ id: Date.now() + Math.random(), title, status: "plan" });
+  input.value = "";
+  save();
+});
+
+// Экспорт в JSON-файл
+exportBtn.addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(cards, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kanban.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Импорт из JSON-файла с проверкой формата
+importInput.addEventListener("change", async () => {
+  const file = importInput.files[0];
+  if (!file) return;
+  try {
+    cards = sanitize(JSON.parse(await file.text()));
+    showError("");
+    save();
+  } catch (e) {
+    showError("Файл не является корректным JSON.");
+  }
+  importInput.value = "";
+});
+
+render();
+</script>
+</body>
+</html>
