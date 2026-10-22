@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To-Do</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f2f4f8; margin: 0; padding: 24px; }
+  .card { max-width: 520px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  h1 { margin-top: 0; font-size: 22px; }
+  form { display: flex; gap: 8px; }
+  #task { flex: 1; padding: 10px; border: 1px solid #c5cad3; border-radius: 8px; font-size: 16px; }
+  button { padding: 8px 12px; border: 0; border-radius: 8px; background: #2f6fed; color: #fff; cursor: pointer; }
+  .filters { display: flex; gap: 6px; margin: 14px 0 4px; }
+  .filters button { background: #e5e8ef; color: #333; }
+  .filters button.active { background: #2f6fed; color: #fff; }
+  ul { list-style: none; padding: 0; margin: 8px 0 0; }
+  li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eceef2; }
+  li span { flex: 1; word-break: break-word; }
+  li.done span { text-decoration: line-through; color: #8a909c; }
+  li button { background: #d64545; padding: 5px 9px; }
+  .muted { color: #6b7280; font-size: 14px; }
+  .error { color: #d64545; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>To-Do</h1>
+  <form id="form">
+    <input id="task" placeholder="Новая задача" autocomplete="off">
+    <button type="submit">Добавить</button>
+  </form>
+  <p id="error" class="error" hidden></p>
+  <div class="filters">
+    <button data-filter="all" class="active">Все</button>
+    <button data-filter="active">Активные</button>
+    <button data-filter="done">Выполненные</button>
+  </div>
+  <ul id="list"></ul>
+  <p id="empty" class="muted"></p>
+  <p class="muted">Всего: <span id="total">0</span>, выполнено: <span id="doneCount">0</span></p>
+</main>
+
+<script>
+// Задание 8 (Средний): To-Do. Хранилище: localStorage, массив объектов.
+const KEY = "lab8_todo";
+
+const form = document.querySelector("#form");
+const input = document.querySelector("#task");
+const list = document.querySelector("#list");
+const emptyMsg = document.querySelector("#empty");
+const errorEl = document.querySelector("#error");
+const totalEl = document.querySelector("#total");
+const doneEl = document.querySelector("#doneCount");
+const filterBtns = document.querySelectorAll("[data-filter]");
+
+// Структура данных: [{ id: 1, text: "Сделать лабу", done: false }, ...]
+let tasks = loadTasks();
+let filter = "all";   // текущий фильтр (в хранилище не сохраняем)
+
+function loadTasks() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(KEY) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(t => t && typeof t.text === "string")
+      .map(t => ({ id: t.id ?? Date.now() + Math.random(), text: t.text, done: Boolean(t.done) }));
+  } catch (e) {
+    console.warn("Поврежденный JSON, список сброшен:", e);
+    return [];
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(tasks));
+  } catch (e) {
+    showError("Не удалось сохранить данные.");
+  }
+  render();
+}
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.hidden = !msg;
+}
+
+function visibleTasks() {
+  if (filter === "active") return tasks.filter(t => !t.done);
+  if (filter === "done") return tasks.filter(t => t.done);
+  return tasks;
+}
+
+function render() {
+  list.replaceChildren();
+  const shown = visibleTasks();
+  shown.forEach(task => {
+    const li = document.createElement("li");
+    if (task.done) li.classList.add("done");
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = task.done;
+    cb.addEventListener("change", () => {
+      task.done = cb.checked;
+      save();
+    });
+
+    const span = document.createElement("span");
+    span.textContent = task.text;
+
+    const del = document.createElement("button");
+    del.textContent = "Удалить";
+    del.addEventListener("click", () => {
+      tasks = tasks.filter(t => t.id !== task.id);
+      save();
+    });
+
+    li.append(cb, span, del);
+    list.append(li);
+  });
+
+  totalEl.textContent = tasks.length;
+  doneEl.textContent = tasks.filter(t => t.done).length;
+  emptyMsg.hidden = shown.length > 0;
+  emptyMsg.textContent = tasks.length === 0 ? "Задач пока нет." : "В этом фильтре задач нет.";
+  filterBtns.forEach(b => b.classList.toggle("active", b.dataset.filter === filter));
+}
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) {
+    showError("Введите текст задачи.");
+    return;
+  }
+  showError("");
+  tasks.push({ id: Date.now() + Math.random(), text, done: false });
+  input.value = "";
+  save();
+});
+
+filterBtns.forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.filter;
+  render();
+}));
+
+render();
+</script>
+</body>
+</html>
