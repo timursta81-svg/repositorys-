@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Управление спортивными тренировками</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 12px; background: #f2f4f7; color: #222; }
+  h1 { color: #1c4fd6; }
+  .box { background: white; border: 1px solid #ccc; border-radius: 6px; padding: 14px; margin-bottom: 16px; }
+  input, select, button { padding: 7px; margin: 4px 4px 4px 0; font-size: 15px; }
+  button { background: #1c4fd6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  button.delete { background: #c0392b; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; }
+  th { background: #e8ecf3; }
+  #error { color: #c0392b; min-height: 20px; }
+  .table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Управление спортивными тренировками</h1>
+
+<div class="box">
+  <h2>Добавить тренировку</h2>
+  <input type="date" id="date">
+  <input type="text" id="name" placeholder="Упражнение (например, Жим лёжа)">
+  <select id="category">
+    <option value="сила">сила</option>
+    <option value="кардио">кардио</option>
+    <option value="растяжка">растяжка</option>
+  </select>
+  <input type="number" id="sets" placeholder="Подходы" style="width:90px">
+  <input type="number" id="reps" placeholder="Повторения" style="width:110px">
+  <input type="number" id="weight" placeholder="Вес, кг" style="width:90px">
+  <button onclick="addWorkout()">Добавить</button>
+  <p id="error"></p>
+</div>
+
+<div class="box">
+  <h2>Список тренировок</h2>
+  <input type="text" id="search" placeholder="Поиск по названию" oninput="showWorkouts()">
+  <select id="filter" onchange="showWorkouts()">
+    <option value="все">Все категории</option>
+    <option value="сила">сила</option>
+    <option value="кардио">кардио</option>
+    <option value="растяжка">растяжка</option>
+  </select>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Дата</th><th>Упражнение</th><th>Категория</th><th>План</th><th>Вес</th><th></th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="box">
+  <h2>Статистика</h2>
+  <div id="stats"></div>
+</div>
+
+<script>
+// Массив с тренировками. Каждая тренировка - объект.
+var workouts = [];
+
+// Загружаем сохранённые данные из браузера
+try {
+  workouts = JSON.parse(localStorage.getItem("workouts")) || [];
+} catch (e) {
+  workouts = [];
+}
+
+// Сохранение данных
+function saveData() {
+  try {
+    localStorage.setItem("workouts", JSON.stringify(workouts));
+  } catch (e) {
+    // если браузер не разрешает сохранять, программа всё равно работает
+  }
+}
+
+// Защита от вставки html-кода в название
+function safe(text) {
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Добавление тренировки с проверкой ввода
+function addWorkout() {
+  var date = document.getElementById("date").value;
+  var name = document.getElementById("name").value.trim();
+  var category = document.getElementById("category").value;
+  var sets = Number(document.getElementById("sets").value);
+  var reps = Number(document.getElementById("reps").value);
+  var weight = Number(document.getElementById("weight").value);
+  var error = "";
+
+  if (date === "") {
+    error = "Выберите дату";
+  } else if (name === "") {
+    error = "Введите название упражнения";
+  } else if (!Number.isInteger(sets) || sets < 1 || sets > 50) {
+    error = "Подходы: целое число от 1 до 50";
+  } else if (!Number.isInteger(reps) || reps < 1 || reps > 500) {
+    error = "Повторения: целое число от 1 до 500";
+  } else if (isNaN(weight) || weight < 0 || weight > 500) {
+    error = "Вес: число от 0 до 500 кг";
+  } else {
+    // проверка: такая запись уже есть?
+    for (var i = 0; i < workouts.length; i++) {
+      if (workouts[i].date === date && workouts[i].name.toLowerCase() === name.toLowerCase()) {
+        error = "Это упражнение на эту дату уже добавлено";
+      }
+    }
+  }
+
+  document.getElementById("error").textContent = error;
+  if (error !== "") {
+    return;
+  }
+
+  workouts.push({ date: date, name: name, category: category, sets: sets, reps: reps, weight: weight });
+
+  // сортируем по дате
+  workouts.sort(function (a, b) {
+    if (a.date < b.date) return -1;
+    if (a.date > b.date) return 1;
+    return 0;
+  });
+
+  saveData();
+  document.getElementById("name").value = "";
+  document.getElementById("sets").value = "";
+  document.getElementById("reps").value = "";
+  document.getElementById("weight").value = "";
+  showAll();
+}
+
+// Удаление тренировки
+function deleteWorkout(index) {
+  workouts.splice(index, 1);
+  saveData();
+  showAll();
+}
+
+// Вывод таблицы с учётом поиска и фильтра
+function showWorkouts() {
+  var search = document.getElementById("search").value.toLowerCase();
+  var filter = document.getElementById("filter").value;
+  var html = "";
+
+  for (var i = 0; i < workouts.length; i++) {
+    var w = workouts[i];
+    if (search !== "" && w.name.toLowerCase().indexOf(search) === -1) continue;
+    if (filter !== "все" && w.category !== filter) continue;
+
+    html += "<tr>" +
+      "<td>" + w.date + "</td>" +
+      "<td>" + safe(w.name) + "</td>" +
+      "<td>" + w.category + "</td>" +
+      "<td>" + w.sets + " × " + w.reps + "</td>" +
+      "<td>" + w.weight + " кг</td>" +
+      "<td><button class='delete' onclick='deleteWorkout(" + i + ")'>Удалить</button></td>" +
+      "</tr>";
+  }
+
+  if (html === "") {
+    html = "<tr><td colspan='6'>Записей нет</td></tr>";
+  }
+  document.getElementById("tbody").innerHTML = html;
+}
+
+// Подсчёт статистики
+function showStats() {
+  var volume = 0;              // общий объём нагрузки
+  var records = {};            // рекорды веса по упражнениям
+  var counts = { "сила": 0, "кардио": 0, "растяжка": 0 };
+
+  for (var i = 0; i < workouts.length; i++) {
+    var w = workouts[i];
+    volume += w.sets * w.reps * w.weight;
+    counts[w.category]++;
+    if (records[w.name] === undefined || w.weight > records[w.name]) {
+      records[w.name] = w.weight;
+    }
+  }
+
+  var html = "<p>Всего тренировок: <b>" + workouts.length + "</b></p>" +
+    "<p>Общий объём нагрузки: <b>" + volume + " кг</b></p>" +
+    "<p>По категориям: сила — " + counts["сила"] + ", кардио — " + counts["кардио"] +
+    ", растяжка — " + counts["растяжка"] + "</p>";
+
+  html += "<p>Рекорды по весу:</p><ul>";
+  var any = false;
+  for (var name in records) {
+    html += "<li>" + safe(name) + ": " + records[name] + " кг</li>";
+    any = true;
+  }
+  if (!any) html += "<li>пока нет данных</li>";
+  html += "</ul>";
+
+  document.getElementById("stats").innerHTML = html;
+}
+
+function showAll() {
+  showWorkouts();
+  showStats();
+}
+
+showAll();
+</script>
+
+</body>
+</html>
