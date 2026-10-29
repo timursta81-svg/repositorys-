@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа №9 — Fetch API</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <p class="eyebrow">Языки и технологии программирования</p>
+            <h1>Асинхронные запросы</h1>
+            <p class="subtitle">Fetch API · AJAX · REST API</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel">
+            <h2>Выбор задания</h2>
+
+            <label for="variantSelect">Уровень сложности:</label>
+            <select id="variantSelect">
+                <option value="1">Базовый — №1: 10 публикаций</option>
+                <option value="8">Средний — №8: поиск публикаций</option>
+                <option value="18">Повышенный — №18: пользователи и публикации</option>
+            </select>
+
+            <div class="controls">
+                <button id="loadBtn">Загрузить данные</button>
+                <button id="errorBtn" class="secondary">Проверить ошибку API</button>
+            </div>
+
+            <p id="status" class="status" role="status" aria-live="polite">
+                Выберите задание и нажмите «Загрузить данные».
+            </p>
+        </section>
+
+        <section class="stats">
+            <article class="stat-card">
+                <span>Пользователей</span>
+                <strong id="usersCount">—</strong>
+            </article>
+            <article class="stat-card">
+                <span>Публикаций</span>
+                <strong id="postsCount">—</strong>
+            </article>
+            <article class="stat-card">
+                <span>Запросов</span>
+                <strong id="requestCount">0</strong>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h2 id="sectionTitle">Результат</h2>
+
+            <div id="searchContainer" class="search-container hidden">
+                <label for="searchInput">Поиск по заголовку:</label>
+                <input
+                    type="search"
+                    id="searchInput"
+                    placeholder="Введите слово из заголовка..."
+                >
+                <p id="searchInfo" class="muted"></p>
+            </div>
+
+            <div id="results" class="results"></div>
+            <p id="emptyMessage" class="empty hidden">Данные не найдены.</p>
+        </section>
+
+        <footer>
+            <p>Выполнил Слепцов Тимур, группа ИС 25-21</p>
+            <p>Лабораторная работа №9</p>
+        </footer>
+    </main>
+</body>
+</html>
