@@ -1,0 +1,291 @@
+const API_URL = "https://jsonplaceholder.typicode.com";
+
+const variantSelect = document.querySelector("#variantSelect");
+const loadBtn = document.querySelector("#loadBtn");
+const errorBtn = document.querySelector("#errorBtn");
+const statusElement = document.querySelector("#status");
+
+const usersCount = document.querySelector("#usersCount");
+const postsCount = document.querySelector("#postsCount");
+const requestCount = document.querySelector("#requestCount");
+
+const sectionTitle = document.querySelector("#sectionTitle");
+const searchContainer = document.querySelector("#searchContainer");
+const searchInput = document.querySelector("#searchInput");
+const searchInfo = document.querySelector("#searchInfo");
+const results = document.querySelector("#results");
+const emptyMessage = document.querySelector("#emptyMessage");
+
+let totalRequests = 0;
+let currentUsers = [];
+let currentPosts = [];
+let currentVariant = "1";
+let isLoading = false;
+
+function setStatus(message, type = "") {
+    statusElement.textContent = message;
+    statusElement.className = "status";
+
+    if (type) {
+        statusElement.classList.add(type);
+    }
+}
+
+function updateRequestCount() {
+    requestCount.textContent = totalRequests;
+}
+
+async function fetchJson(path) {
+    totalRequests++;
+    updateRequestCount();
+
+    const response = await fetch(${API_URL}${path});
+
+    if (!response.ok) {
+        throw new Error(HTTP-ошибка: ${response.status});
+    }
+
+    return await response.json();
+}
+
+function clearResults() {
+    results.replaceChildren();
+    emptyMessage.classList.add("hidden");
+}
+
+function createCard(title, details, number) {
+    const card = document.createElement("article");
+    card.className = "result-card";
+
+    const badge = document.createElement("span");
+    badge.className = "card-number";
+    badge.textContent = ID: ${number};
+
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+
+    card.append(badge, heading);
+
+    for (const detail of details) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = detail;
+        card.append(paragraph);
+    }
+
+    return card;
+}
+
+function showEmptyMessage(message = "Данные не найдены.") {
+    emptyMessage.textContent = message;
+    emptyMessage.classList.remove("hidden");
+}
+
+function renderPosts(posts) {
+    clearResults();
+
+    if (posts.length === 0) {
+        showEmptyMessage("По вашему запросу ничего не найдено.");
+        searchInfo.textContent = "Найдено: 0";
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (const post of posts) {
+        fragment.append(
+            createCard(
+                post.title || "Без заголовка",
+                [Пользователь ID: ${post.userId}, post.body || ""],
+                post.id
+            )
+        );
+    }
+
+    results.append(fragment);
+
+    if (currentVariant === "8") {
+        searchInfo.textContent = Найдено публикаций: ${posts.length};
+    }
+}
+
+function renderUsers() {
+    clearResults();
+
+    const fragment = document.createDocumentFragment();
+
+    for (const user of currentUsers) {
+        const userPosts = currentPosts.filter(
+            post => post.userId === user.id
+        );
+
+        fragment.append(
+            createCard(
+                user.name || "Без имени",
+                [
+                    Имя пользователя: ${user.username || "не указано"},
+                    Email: ${user.email || "не указан"},
+                    Город: ${user.address?.city || "не указан"},
+                    Компания: ${user.company?.name || "не указана"},
+                    Количество публикаций: ${userPosts.length}
+                ],
+                user.id
+            )
+        );
+    }
+
+    results.append(fragment);
+}
+
+function applyVariantInterface() {
+    currentVariant = variantSelect.value;
+    searchInput.value = "";
+    searchInfo.textContent = "";
+    clearResults();
+
+    if (currentVariant === "1") {
+        sectionTitle.textContent = "10 последних публикаций";
+        searchContainer.classList.add("hidden");
+    } else if (currentVariant === "8") {
+        sectionTitle.textContent = "Публикации с поиском";
+        searchContainer.classList.remove("hidden");
+    } else {
+        sectionTitle.textContent = "Пользователи и их публикации";
+        searchContainer.classList.add("hidden");
+    }
+
+    usersCount.textContent = "—";
+    postsCount.textContent = "—";
+    setStatus("Нажмите «Загрузить данные».");
+}
+
+async function loadData() {
+    if (isLoading) return;
+
+    isLoading = true;
+    loadBtn.disabled = true;
+    errorBtn.disabled = true;
+    variantSelect.disabled = true;
+
+    currentVariant = variantSelect.value;
+    clearResults();
+    setStatus("Загрузка данных...", "");
+
+    try {
+        if (currentVariant === "1") {
+            const posts = await fetchJson("/posts?_limit=10");
+
+            if (!Array.isArray(posts)) {
+                throw new Error("Получен некорректный формат данных.");
+            }
+
+            currentPosts = posts;
+            currentUsers = [];
+
+            usersCount.textContent = "—";
+            postsCount.textContent = posts.length;
+
+            renderPosts(posts);
+            setStatus(Успешно загружено публикаций: ${posts.length}., "success");
+        }
+
+        else if (currentVariant === "8") {
+            const posts = await fetchJson("/posts");
+
+            if (!Array.isArray(posts)) {
+                throw new Error("Получен некорректный формат данных.");
+            }
+
+            currentPosts = posts;
+            currentUsers = [];
+
+            usersCount.textContent = "—";
+            postsCount.textContent = posts.length;
+
+            renderPosts(posts);
+            setStatus("Публикации загружены. Используйте поиск по заголовку.", "success");
+        }
+
+        else if (currentVariant === "18") {
+            const [users, posts] = await Promise.all([
+                fetchJson("/users"),
+                fetchJson("/posts")
+            ]);
+
+            if (!Array.isArray(users) || !Array.isArray(posts)) {
+                throw new Error("Получен некорректный формат данных.");
+            }
+
+            currentUsers = users;
+            currentPosts = posts;
+
+            usersCount.textContent = users.length;
+            postsCount.textContent = posts.length;
+
+            renderUsers();
+            setStatus(
+                "Пользователи и публикации успешно загружены параллельно.",
+                "success"
+            );
+        }
+    } catch (error) {
+        clearResults();
+        usersCount.textContent = "—";
+        postsCount.textContent = "—";
+
+        setStatus(
+            Ошибка загрузки: ${error.message}. Нажмите «Загрузить данные», чтобы повторить попытку.,
+            "error"
+        );
+    } finally {
+        isLoading = false;
+        loadBtn.disabled = false;
+        errorBtn.disabled = false;
+        variantSelect.disabled = false;
+    }
+}
+
+function searchPosts() {
+    if (currentVariant !== "8") return;
+
+    const query = searchInput.value.trim().toLowerCase();
+
+    const filteredPosts = currentPosts.filter(post =>
+        (post.title || "").toLowerCase().includes(query)
+    );
+
+    renderPosts(filteredPosts);
+    searchInfo.textContent = Найдено публикаций: ${filteredPosts.length};
+}
+
+async function testApiError() {
+    if (isLoading) return;
+
+    isLoading = true;
+    loadBtn.disabled = true;
+    errorBtn.disabled = true;
+    variantSelect.disabled = true;
+
+    setStatus("Проверка обработки ошибки...", "");
+    clearResults();
+
+    try {
+        // Несуществующий ресурс нужен для проверки HTTP-ошибки 404.
+        await fetchJson("/resource-that-does-not-exist-12345");
+        setStatus("Ресурс неожиданно найден.", "success");
+    } catch (error) {
+        setStatus(
+            Ошибка успешно обработана: ${error.message}. Теперь нажмите «Загрузить данные» для повторной загрузки.,
+            "error"
+        );
+    } finally {
+        isLoading = false;
+        loadBtn.disabled = false;
+        errorBtn.disabled = false;
+        variantSelect.disabled = false;
+    }
+}
+
+loadBtn.addEventListener("click", loadData);
+errorBtn.addEventListener("click", testApiError);
+variantSelect.addEventListener("change", applyVariantInterface);
+searchInput.addEventListener("input", searchPosts);
