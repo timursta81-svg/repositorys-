@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Калькулятор скидки</title>
+</head>
+<body>
+    <h1>Калькулятор скидки</h1>
+
+    <input id="price" type="number" placeholder="Цена">
+    <input id="discount" type="number" placeholder="Скидка %">
+
+    <button id="calculate">Рассчитать</button>
+
+    <p id="result"></p>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
