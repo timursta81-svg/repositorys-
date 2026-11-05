@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список задач</title>
+</head>
+<body>
+    <h1>Мои задачи</h1>
+
+    <input id="task" placeholder="Новая задача">
+    <button id="add">Добавить</button>
+
+    <ul id="list"></ul>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
