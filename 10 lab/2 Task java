@@ -1,0 +1,15 @@
+import { addTask } from "./tasks.js";
+import { render } from "./ui.js";
+
+document.querySelector("#add").addEventListener("click", () => {
+    const input = document.querySelector("#task");
+
+    if (input.value.trim() === "") {
+        alert("Введите задачу");
+        return;
+    }
+
+    addTask(input.value);
+    input.value = "";
+    render();
+});
