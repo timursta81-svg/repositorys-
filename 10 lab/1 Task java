@@ -1,0 +1,16 @@
+import { calculateDiscount } from "./pricing.js";
+
+const button = document.querySelector("#calculate");
+
+button.addEventListener("click", () => {
+    const price = Number(document.querySelector("#price").value);
+    const discount = Number(document.querySelector("#discount").value);
+
+    if (price <= 0 || discount < 0 || discount > 100) {
+        alert("Введите правильные данные");
+        return;
+    }
+
+    document.querySelector("#result").textContent =
+        "Итоговая цена: " + calculateDiscount(price, discount);
+});
