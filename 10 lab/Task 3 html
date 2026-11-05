@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Kanban</title>
+</head>
+<body>
+    <h1>Kanban-доска</h1>
+
+    <input id="task" placeholder="Название задачи">
+    <button id="add">Добавить</button>
+
+    <h2>Нужно сделать</h2>
+    <div id="todo"></div>
+
+    <h2>В процессе</h2>
+    <div id="progress"></div>
+
+    <h2>Готово</h2>
+    <div id="done"></div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
