@@ -1,0 +1,55 @@
+import { tasks, addTask, moveTask, deleteTask } from "./tasks.js";
+import { columns } from "./columns.js";
+import { save, load } from "./storage.js";
+
+tasks.push(...load());
+
+function render() {
+    columns.forEach(status => {
+        const list = document.querySelector("#" + status);
+        list.innerHTML = "";
+
+        tasks.filter(t => t.status === status).forEach(task => {
+            const div = document.createElement("div");
+            div.textContent = task.name + " ";
+
+            const next = columns[columns.indexOf(status) + 1];
+            const button = document.createElement("button");
+
+            button.textContent = next ? "Далее" : "Готово";
+
+            button.addEventListener("click", () => {
+                if (next) moveTask(task.id, next);
+                render();
+            });
+
+            const del = document.createElement("button");
+            del.textContent = "Удалить";
+
+            del.addEventListener("click", () => {
+                deleteTask(task.id);
+                render();
+            });
+
+            div.append(button, del);
+            list.appendChild(div);
+        });
+    });
+
+    save(tasks);
+}
+
+document.querySelector("#add").addEventListener("click", () => {
+    const input = document.querySelector("#task");
+
+    if (!input.value.trim()) {
+        alert("Введите задачу");
+        return;
+    }
+
+    addTask(input.value);
+    input.value = "";
+    render();
+});
+
+render();
