@@ -1,0 +1,77 @@
+import { useState } from "react";
+
+function TaskCard({ task, onMove }) {
+  return (
+    <div>
+      <p>{task.text}</p>
+
+      {task.status !== "done" && (
+        <button onClick={() => onMove(task.id, 1)}>
+          Далее
+        </button>
+      )}
+
+      {task.status !== "todo" && (
+        <button onClick={() => onMove(task.id, -1)}>
+          Назад
+        </button>
+      )}
+    </div>
+  );
+}
+
+function KanbanBoard() {
+  const [tasks, setTasks] = useState([
+    { id: 1, text: "Изучить React", status: "todo" },
+    { id: 2, text: "Создать компонент", status: "progress" },
+    { id: 3, text: "Проверить приложение", status: "done" }
+  ]);
+
+  const statuses = [
+    { id: "todo", title: "Новые задачи" },
+    { id: "progress", title: "В работе" },
+    { id: "done", title: "Готово" }
+  ];
+
+  function moveTask(id, direction) {
+    const order = ["todo", "progress", "done"];
+
+    setTasks(tasks.map(task => {
+      if (task.id !== id) return task;
+
+      const current = order.indexOf(task.status);
+      const next = Math.max(0, Math.min(2, current + direction));
+
+      return { ...task, status: order[next] };
+    }));
+  }
+
+  return (
+    <div>
+      <h2>Канбан-доска</h2>
+
+      <div style={{
+        display: "flex",
+        gap: "30px"
+      }}>
+        {statuses.map(status => (
+          <div key={status.id}>
+            <h3>{status.title}</h3>
+
+            {tasks
+              .filter(task => task.status === status.id)
+              .map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onMove={moveTask}
+                />
+              ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default KanbanBoard;
