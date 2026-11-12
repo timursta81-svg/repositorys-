@@ -1,0 +1,171 @@
+
+import { useState } from "react";
+import "./App.css";
+
+// БАЗОВОЕ ЗАДАНИЕ №1 — Счетчик лайков
+function LikeButton({ title }) {
+  const [likes, setLikes] = useState(0);
+
+  return (
+    <div className="card">
+      <h2>{title}</h2>
+      <p>Количество лайков: {likes}</p>
+      <button onClick={() => setLikes(likes + 1)}>
+        ❤️ Нравится
+      </button>
+      <button onClick={() => setLikes(0)}>
+        Сбросить
+      </button>
+    </div>
+  );
+}
+
+// СРЕДНЕЕ ЗАДАНИЕ №8 — Список задач
+function TodoItem({ task, onComplete, onDelete }) {
+  return (
+    <div className="todo-item">
+      <span className={task.done ? "completed" : ""}>
+        {task.text}
+      </span>
+      <button onClick={onComplete}>✓</button>
+      <button onClick={onDelete}>✕</button>
+    </div>
+  );
+}
+
+function TodoList() {
+  const [tasks, setTasks] = useState([]);
+  const [text, setText] = useState("");
+
+  function addTask() {
+    if (text.trim() === "") return;
+
+    setTasks([
+      ...tasks,
+      { id: Date.now(), text: text, done: false }
+    ]);
+
+    setText("");
+  }
+
+  function completeTask(id) {
+    setTasks(tasks.map(task =>
+      task.id === id ? { ...task, done: !task.done } : task
+    ));
+  }
+
+  function deleteTask(id) {
+    setTasks(tasks.filter(task => task.id !== id));
+  }
+
+  return (
+    <div className="card">
+      <h2>Список задач</h2>
+
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Введите задачу"
+      />
+
+      <button onClick={addTask}>Добавить</button>
+
+      {tasks.map(task => (
+        <TodoItem
+          key={task.id}
+          task={task}
+          onComplete={() => completeTask(task.id)}
+          onDelete={() => deleteTask(task.id)}
+        />
+      ))}
+
+      <p>Выполнено: {tasks.filter(t => t.done).length} из {tasks.length}</p>
+    </div>
+  );
+}
+
+// ПОВЫШЕННОЕ ЗАДАНИЕ №19 — Канбан-доска
+function TaskCard({ task, onMove }) {
+  return (
+    <div className="task-card">
+      <p>{task.text}</p>
+      {task.status !== "done" && (
+        <button onClick={() => onMove(task.id, 1)}>
+          Далее →
+        </button>
+      )}
+      {task.status !== "todo" && (
+        <button onClick={() => onMove(task.id, -1)}>
+          ← Назад
+        </button>
+      )}
+    </div>
+  );
+}
+
+function KanbanBoard() {
+  const [tasks, setTasks] = useState([
+    { id: 1, text: "Изучить React", status: "todo" },
+    { id: 2, text: "Создать компонент", status: "progress" },
+    { id: 3, text: "Проверить приложение", status: "done" }
+  ]);
+
+  const statuses = [
+    { id: "todo", title: "Новые задачи" },
+    { id: "progress", title: "В работе" },
+    { id: "done", title: "Готово" }
+  ];
+
+  function moveTask(id, direction) {
+    const order = ["todo", "progress", "done"];
+
+    setTasks(tasks.map(task => {
+      if (task.id !== id) return task;
+
+      const current = order.indexOf(task.status);
+      const next = Math.max(0, Math.min(2, current + direction));
+
+      return { ...task, status: order[next] };
+    }));
+  }
+
+  return (
+    <div className="card">
+      <h2>Канбан-доска</h2>
+
+      <div className="kanban">
+        {statuses.map(status => (
+          <div className="column" key={status.id}>
+            <h3>{status.title}</h3>
+
+            {tasks
+              .filter(task => task.status === status.id)
+              .map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onMove={moveTask}
+                />
+              ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Главный компонент приложения
+export default function App() {
+  return (
+    <div className="container">
+      <h1>Лабораторная работа №11</h1>
+      <p>Выполнил Слепцов Тимур ИС 25-21</p>
+
+      <LikeButton title="Счетчик лайков" />
+
+      <TodoList />
+
+      <KanbanBoard />
+    </div>
+  );
+}
