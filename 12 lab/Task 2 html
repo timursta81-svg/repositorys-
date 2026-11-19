@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Система ролей</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Авторизация</h1>
+
+    <div id="loginBlock">
+        <input id="login" placeholder="Логин">
+        <input id="password" type="password" placeholder="Пароль">
+        <button id="loginBtn">Войти</button>
+
+        <p>student / 12345</p>
+        <p>teacher / 12345</p>
+    </div>
+
+    <div id="profileBlock" hidden>
+        <h2 id="title"></h2>
+        <p id="information"></p>
+        <button id="logoutBtn">Выйти</button>
+    </div>
+
+    <p id="message"></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
