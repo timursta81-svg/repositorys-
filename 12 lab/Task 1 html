@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Кабинет студента</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div id="loginBlock">
+        <h1>Вход студента</h1>
+
+        <form id="loginForm">
+            <input id="login" placeholder="Логин" required>
+            <input id="password" type="password"
+                   placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
+
+        <p id="message"></p>
+        <p>Тестовый логин: student</p>
+        <p>Пароль: 12345</p>
+    </div>
+
+    <div id="profileBlock" hidden>
+        <h1>Личный кабинет</h1>
+        <p id="studentName"></p>
+        <p>Добро пожаловать в систему студента!</p>
+        <button id="logout">Выйти</button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
