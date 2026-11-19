@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>JWT Authentication</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>JWT Авторизация</h1>
+
+    <div id="loginBlock">
+        <input id="login" placeholder="Логин">
+        <input id="password" type="password" placeholder="Пароль">
+        <button id="loginBtn">Войти</button>
+    </div>
+
+    <div id="profileBlock" hidden>
+        <h2>Личный кабинет</h2>
+        <p>Вы успешно авторизованы!</p>
+        <button id="profileBtn">Проверить профиль</button>
+        <button id="refreshBtn">Обновить токен</button>
+        <button id="logoutBtn">Выйти</button>
+    </div>
+
+    <p id="message"></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
