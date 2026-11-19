@@ -1,0 +1,81 @@
+const express = require("express");
+const session = require("express-session");
+const path = require("path");
+
+const app = express();
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(session({
+    secret: "student-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: "strict",
+        maxAge: 30 * 60 * 1000
+    }
+}));
+
+const users = [
+    {
+        login: "student",
+        password: "12345",
+        name: "Тимур Слепцов"
+    }
+];
+
+app.post("/login", (req, res) => {
+    const { login, password } = req.body;
+
+    if (!login || !password) {
+        return res.status(400).json({
+            message: "Заполните все поля"
+        });
+    }
+
+    const user = users.find(
+        u => u.login === login && u.password === password
+    );
+
+    if (!user) {
+        return res.status(401).json({
+            message: "Неверный логин или пароль"
+        });
+    }
+
+    req.session.user = {
+        login: user.login,
+        name: user.name
+    };
+
+    res.json({
+        message: "Вход выполнен успешно",
+        user: req.session.user
+    });
+});
+
+app.get("/profile", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({
+            message: "Сначала войдите в систему"
+        });
+    }
+
+    res.json(req.session.user);
+});
+
+app.post("/logout", (req, res) => {
+    req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+
+        res.json({
+            message: "Вы вышли из системы"
+        });
+    });
+});
+
+app.listen(3001, () => {
+    console.log("Сервер запущен на http://localhost:3001");
+});
