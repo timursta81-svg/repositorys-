@@ -1,0 +1,189 @@
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const path = require("path");
+const crypto = require("crypto");
+
+const app = express();
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+
+const ACCESS_SECRET = "access_secret_change_me_123456789";
+const REFRESH_SECRET = "refresh_secret_change_me_987654321";
+
+const users = [
+    {
+        id: 1,
+        login: "student",
+        password: "12345"
+    }
+];
+
+const refreshTokens = new Map();
+
+function createAccessToken(user) {
+    return jwt.sign(
+        { id: user.id },
+        ACCESS_SECRET,
+        { expiresIn: "2m", algorithm: "HS256" }
+    );
+}
+
+function createRefreshToken(user) {
+    const jti = crypto.randomUUID();
+
+    const token = jwt.sign(
+        { id: user.id, jti },
+        REFRESH_SECRET,
+        { expiresIn: "1d", algorithm: "HS256" }
+    );
+
+    refreshTokens.set(user.id, jti);
+
+    return token;
+}
+
+function authenticate(req, res, next) {
+    const header = req.headers.authorization;
+
+    if (!header) {
+        return res.status(401).json({
+            message: "Нет токена доступа"
+        });
+    }
+
+    try {
+        req.user = jwt.verify(
+            header.split(" ")[1],
+            ACCESS_SECRET,
+            { algorithms: ["HS256"] }
+        );
+
+        next();
+    } catch {
+        res.status(401).json({
+            message: "Access Token истек"
+        });
+    }
+}
+
+app.post("/login", (req, res) => {
+    const { login, password } = req.body;
+
+    const user = users.find(
+        u => u.login === login && u.password === password
+    );
+
+    if (!user) {
+        return res.status(401).json({
+            message: "Неверный логин или пароль"
+        });
+    }
+
+    const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user);
+
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/refresh"
+    });
+
+    res.json({
+        message: "Вход выполнен",
+        accessToken
+    });
+});
+
+app.get("/profile", authenticate, (req, res) => {
+    res.json({
+        message: "Защищенный профиль",
+        userId: req.user.id
+    });
+});
+
+app.post("/refresh", (req, res) => {
+    const token = req.cookies.refreshToken;
+
+    if (!token) {
+        return res.status(401).json({
+            message: "Refresh Token отсутствует"
+        });
+    }
+
+    try {
+        const payload = jwt.verify(
+            token,
+            REFRESH_SECRET,
+            { algorithms: ["HS256"] }
+        );
+
+        if (refreshTokens.get(payload.id) !== payload.jti) {
+            return res.status(401).json({
+                message: "Refresh Token недействителен"
+            });
+        }
+
+        const user = users.find(u => u.id === payload.id);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Пользователь не найден"
+            });
+        }
+
+        const newAccessToken = createAccessToken(user);
+        const newRefreshToken = createRefreshToken(user);
+
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production",
+            path: "/refresh"
+        });
+
+        res.json({
+            message: "Токены обновлены",
+            accessToken: newAccessToken
+        });
+
+    } catch {
+        res.status(401).json({
+            message: "Сессия истекла"
+        });
+    }
+});
+
+app.post("/logout", (req, res) => {
+    const token = req.cookies.refreshToken;
+
+    if (token) {
+        try {
+            const payload = jwt.verify(token, REFRESH_SECRET);
+
+            if (refreshTokens.get(payload.id) === payload.jti) {
+                refreshTokens.delete(payload.id);
+            }
+        } catch {
+            // Токен уже недействителен
+        }
+    }
+
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        path: "/refresh"
+    });
+
+    res.json({
+        message: "Выход выполнен"
+    });
+});
+
+app.listen(3003, () => {
+    console.log("Сервер: http://localhost:3003");
+});
