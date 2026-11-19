@@ -1,0 +1,110 @@
+const express = require("express");
+const session = require("express-session");
+const path = require("path");
+
+const app = express();
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(session({
+    secret: "roles-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: "strict"
+    }
+}));
+
+const users = [
+    {
+        login: "student",
+        password: "12345",
+        role: "student"
+    },
+    {
+        login: "teacher",
+        password: "12345",
+        role: "teacher"
+    }
+];
+
+function auth(req, res, next) {
+    if (!req.session.user) {
+        return res.status(401).json({
+            message: "Необходимо войти"
+        });
+    }
+
+    next();
+}
+
+function checkRole(role) {
+    return (req, res, next) => {
+        if (req.session.user.role !== role) {
+            return res.status(403).json({
+                message: "Доступ запрещен"
+            });
+        }
+
+        next();
+    };
+}
+
+app.post("/login", (req, res) => {
+    const { login, password } = req.body;
+
+    if (!login || !password) {
+        return res.status(400).json({
+            message: "Заполните все поля"
+        });
+    }
+
+    const user = users.find(
+        u => u.login === login && u.password === password
+    );
+
+    if (!user) {
+        return res.status(401).json({
+            message: "Неверные данные"
+        });
+    }
+
+    req.session.user = {
+        login: user.login,
+        role: user.role
+    };
+
+    res.json({
+        message: "Успешный вход",
+        user: req.session.user
+    });
+});
+
+app.get("/student", auth, checkRole("student"), (req, res) => {
+    res.json({
+        message: "Кабинет студента",
+        information: "Здесь находятся учебные материалы"
+    });
+});
+
+app.get("/teacher", auth, checkRole("teacher"), (req, res) => {
+    res.json({
+        message: "Кабинет преподавателя",
+        information: "Здесь находится управление занятиями"
+    });
+});
+
+app.post("/logout", auth, (req, res) => {
+    req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+        res.json({
+            message: "Выход выполнен"
+        });
+    });
+});
+
+app.listen(3002, () => {
+    console.log("Сервер: http://localhost:3002");
+});
