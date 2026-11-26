@@ -1,0 +1,84 @@
+"""Вариант 17 (повышенный). История браузера: два стека back/forward;
+переход по URL, назад и вперед с корректной очисткой истории."""
+import unittest
+
+
+class Browser:
+    """Два списка в роли стеков (LIFO: append/pop) + текущая страница."""
+
+    def __init__(self):
+        self.back_stack = []
+        self.forward_stack = []
+        self.current = None
+
+    def visit(self, url):
+        """Переход по URL; история 'вперед' очищается."""
+        if self.current is not None:
+            self.back_stack.append(self.current)
+        self.current = url
+        self.forward_stack.clear()
+        return self.current
+
+    def back(self):
+        """Назад; при пустой истории текущая страница не меняется."""
+        if not self.back_stack:
+            return self.current
+        self.forward_stack.append(self.current)
+        self.current = self.back_stack.pop()
+        return self.current
+
+    def forward(self):
+        """Вперед; при пустой истории текущая страница не меняется."""
+        if not self.forward_stack:
+            return self.current
+        self.back_stack.append(self.current)
+        self.current = self.forward_stack.pop()
+        return self.current
+
+
+def demo():
+    b = Browser()
+    for url in ("a.com", "b.com", "c.com"):
+        b.visit(url)
+    print("Назад:", b.back(), "| Назад:", b.back(), "| Вперед:", b.forward())
+    b.visit("d.com")
+    print("После перехода на d.com 'вперед' ->", b.forward(), "(история очищена)")
+
+
+class TestBrowser(unittest.TestCase):
+    def setUp(self):
+        self.b = Browser()
+
+    def test_normal_back_forward(self):
+        for u in ("a", "b", "c"):
+            self.b.visit(u)
+        self.assertEqual(self.b.back(), "b")
+        self.assertEqual(self.b.forward(), "c")
+
+    def test_empty_history(self):
+        self.assertIsNone(self.b.back())
+        self.assertIsNone(self.b.forward())
+
+    def test_visit_clears_forward(self):
+        for u in ("a", "b", "c"):
+            self.b.visit(u)
+        self.b.back()
+        self.b.visit("d")
+        self.assertEqual(self.b.forward(), "d")
+        self.assertEqual(self.b.forward_stack, [])
+
+    def test_back_at_first_page(self):
+        self.b.visit("a")
+        self.assertEqual(self.b.back(), "a")
+
+    def test_repeated_same_url(self):
+        self.b.visit("a")
+        self.b.visit("a")
+        self.assertEqual(self.b.back(), "a")
+        self.assertEqual(self.b.back(), "a")
+
+
+if __name__ == "__main__":
+    demo()
+    print("\n--- Тесты ---")
+    unittest.main(verbosity=2)
