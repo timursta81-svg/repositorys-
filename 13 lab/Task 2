@@ -1,0 +1,85 @@
+"""Вариант 12 (средний). Очередь задач техподдержки:
+прием заявок, обработка FIFO, подсчет выполненных по категориям."""
+import unittest
+from collections import deque
+
+
+class SupportQueue:
+    """deque - FIFO (popleft за O(1)); dict - счетчики по категориям."""
+
+    def __init__(self):
+        self.queue = deque()
+        self.done = {}
+        self._next_id = 1
+
+    def add_ticket(self, category, text):
+        ticket = {"id": self._next_id, "category": category, "text": text}
+        self._next_id += 1
+        self.queue.append(ticket)
+        return ticket["id"]
+
+    def process(self):
+        """Обработать первую заявку; None, если очередь пуста."""
+        if not self.queue:
+            return None
+        ticket = self.queue.popleft()
+        cat = ticket["category"]
+        self.done[cat] = self.done.get(cat, 0) + 1
+        return ticket
+
+    def pending(self):
+        return list(self.queue)
+
+    def stats(self):
+        return dict(self.done)
+
+
+def demo():
+    sq = SupportQueue()
+    sq.add_ticket("сеть", "Нет интернета")
+    sq.add_ticket("принтер", "Не печатает")
+    sq.add_ticket("сеть", "Медленный Wi-Fi")
+    print("В очереди:", len(sq.pending()))
+    print("Обработана:", sq.process())
+    print("Обработана:", sq.process())
+    print("Выполнено по категориям:", sq.stats())
+    sq.process()
+    print("Пустая очередь:", sq.process())
+
+
+class TestSupportQueue(unittest.TestCase):
+    def setUp(self):
+        self.sq = SupportQueue()
+
+    def test_fifo_order(self):
+        self.sq.add_ticket("сеть", "1")
+        self.sq.add_ticket("принтер", "2")
+        self.assertEqual(self.sq.process()["id"], 1)
+        self.assertEqual(self.sq.process()["id"], 2)
+
+    def test_empty_queue(self):
+        self.assertIsNone(self.sq.process())
+        self.assertEqual(self.sq.pending(), [])
+
+    def test_same_text_duplicates_get_unique_ids(self):
+        a = self.sq.add_ticket("сеть", "то же")
+        b = self.sq.add_ticket("сеть", "то же")
+        self.assertNotEqual(a, b)
+
+    def test_stats_by_category(self):
+        for cat in ("сеть", "сеть", "принтер"):
+            self.sq.add_ticket(cat, "x")
+            self.sq.process()
+        self.assertEqual(self.sq.stats(), {"сеть": 2, "принтер": 1})
+
+    def test_process_more_than_added(self):
+        self.sq.add_ticket("сеть", "x")
+        self.sq.process()
+        self.assertIsNone(self.sq.process())
+        self.assertEqual(self.sq.stats(), {"сеть": 1})
+
+
+if __name__ == "__main__":
+    demo()
+    print("\n--- Тесты ---")
+    unittest.main(verbosity=2)
