@@ -1,0 +1,108 @@
+"""Вариант 6 (базовый). Телефонная книга: dict имя -> телефон.
+Допфункция: сохранение и загрузка в JSON."""
+import json
+import os
+import tempfile
+import unittest
+
+
+class PhoneBook:
+    """dict: доступ, вставка, изменение и удаление по ключу за O(1);
+    уникальность ключей исключает дубликаты имен."""
+
+    def __init__(self):
+        self.contacts = {}
+
+    def add(self, name, phone):
+        if name in self.contacts:
+            return False
+        self.contacts[name] = phone
+        return True
+
+    def find(self, name):
+        return self.contacts.get(name)
+
+    def update(self, name, phone):
+        if name not in self.contacts:
+            return False
+        self.contacts[name] = phone
+        return True
+
+    def delete(self, name):
+        return self.contacts.pop(name, None) is not None
+
+    def all(self):
+        return dict(self.contacts)
+
+    def save_json(self, path):
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.contacts, f, ensure_ascii=False, indent=2)
+
+    def load_json(self, path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                self.contacts = json.load(f)
+            return True
+        except (FileNotFoundError, json.JSONDecodeError):
+            return False
+
+
+def demo():
+    pb = PhoneBook()
+    pb.add("Алия", "+7 701 111 11 11")
+    pb.add("Дамир", "+7 702 222 22 22")
+    print("Дубликат добавлен?", pb.add("Алия", "000"))
+    print("Поиск Алия:", pb.find("Алия"))
+    print("Поиск Борис:", pb.find("Борис"))
+    pb.update("Дамир", "+7 777 333 33 33")
+    pb.delete("Алия")
+    print("Книга:", pb.all())
+    pb.save_json("contacts.json")
+    print("Загружено из JSON:", pb.load_json("contacts.json"))
+
+
+class TestPhoneBook(unittest.TestCase):
+    def setUp(self):
+        self.pb = PhoneBook()
+
+    def test_normal_add_find(self):
+        self.pb.add("Алия", "111")
+        self.assertEqual(self.pb.find("Алия"), "111")
+
+    def test_empty_book(self):
+        self.assertEqual(self.pb.all(), {})
+        self.assertIsNone(self.pb.find("Алия"))
+
+    def test_duplicate(self):
+        self.pb.add("Алия", "111")
+        self.assertFalse(self.pb.add("Алия", "222"))
+        self.assertEqual(self.pb.find("Алия"), "111")
+
+    def test_missing_update_delete(self):
+        self.assertFalse(self.pb.update("Нет", "1"))
+        self.assertFalse(self.pb.delete("Нет"))
+
+    def test_update_and_delete(self):
+        self.pb.add("Дамир", "1")
+        self.assertTrue(self.pb.update("Дамир", "2"))
+        self.assertEqual(self.pb.find("Дамир"), "2")
+        self.assertTrue(self.pb.delete("Дамир"))
+        self.assertIsNone(self.pb.find("Дамир"))
+
+    def test_json_roundtrip(self):
+        self.pb.add("Алия", "111")
+        path = os.path.join(tempfile.mkdtemp(), "c.json")
+        self.pb.save_json(path)
+        other = PhoneBook()
+        self.assertTrue(other.load_json(path))
+        self.assertEqual(other.all(), {"Алия": "111"})
+
+    def test_json_missing_file(self):
+        self.assertFalse(self.pb.load_json("no_such_file.json"))
+
+
+if __name__ == "__main__":
+    demo()
+    print("\n--- Тесты ---")
+    unittest.main(verbosity=2)
+    
